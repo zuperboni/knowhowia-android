@@ -8,14 +8,14 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.poc.knowhowia.details.CharacterDetailsFragment
 import com.poc.knowhowia.model.CharacterUi
+import org.koin.android.scope.AndroidScopeComponent
 import org.koin.androidx.scope.fragmentScope
-import org.koin.core.component.KoinScopeComponent
 import org.koin.core.scope.Scope
 
 class CharactersFragment :
     Fragment(R.layout.fragment_characters),
     HomeContract.View,
-    KoinScopeComponent {
+    AndroidScopeComponent {
 
     override val scope: Scope by fragmentScope()
 
