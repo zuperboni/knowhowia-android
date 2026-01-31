@@ -30,11 +30,11 @@ class CharacterDetailsFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-//        progress = view.findViewById(R.id.progress)
-//        name = view.findViewById(R.id.name)
-//        status = view.findViewById(R.id.status)
-//        species = view.findViewById(R.id.species)
-//        gender = view.findViewById(R.id.gender)
+        progress = view.findViewById(R.id.progress)
+        name = view.findViewById(R.id.name)
+        status = view.findViewById(R.id.status)
+        species = view.findViewById(R.id.species)
+        gender = view.findViewById(R.id.gender)
 
         val id = requireArguments().getInt(ARG_ID)
 
