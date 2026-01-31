@@ -22,7 +22,9 @@ class CharacterDetailsFragment :
     private lateinit var status: TextView
     private lateinit var species: TextView
     private lateinit var gender: TextView
-    private val presenter: CharacterDetailsContract.Presenter = scope.get<CharacterDetailsContract.Presenter>()
+    private val presenter: CharacterDetailsContract.Presenter by lazy {
+        scope.get<CharacterDetailsContract.Presenter>()
+    }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
