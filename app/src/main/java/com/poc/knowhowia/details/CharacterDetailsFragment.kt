@@ -7,13 +7,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.poc.knowhowia.R
+import org.koin.android.scope.AndroidScopeComponent
 import org.koin.androidx.scope.fragmentScope
-import org.koin.core.component.KoinScopeComponent
 import org.koin.core.scope.Scope
 
 class CharacterDetailsFragment :
     Fragment(R.layout.fragment_character_details),
-    CharacterDetailsContract.View, KoinScopeComponent {
+    CharacterDetailsContract.View, AndroidScopeComponent {
 
     override val scope: Scope by fragmentScope()
 
@@ -22,9 +22,8 @@ class CharacterDetailsFragment :
     private lateinit var status: TextView
     private lateinit var species: TextView
     private lateinit var gender: TextView
-    private val presenter: CharacterDetailsContract.Presenter by lazy {
-        scope.get<CharacterDetailsContract.Presenter>()
-    }
+    private val presenter: CharacterDetailsContract.Presenter = scope.get<CharacterDetailsContract.Presenter>()
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
