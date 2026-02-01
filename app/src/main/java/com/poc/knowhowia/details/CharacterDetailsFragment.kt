@@ -37,7 +37,6 @@ class CharacterDetailsFragment :
         gender = view.findViewById(R.id.gender)
 
         val id = requireArguments().getInt(ARG_ID)
-
         presenter.attach(this)
         presenter.loadCharacter(id)
     }
