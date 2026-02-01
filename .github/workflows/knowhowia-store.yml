@@ -142,7 +142,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          ./gradlew :app:run --args="analyze"
+          ./gradlew run --args="analyze"
 
       # 6) Copiar o resultado pro repo Android e commitar
       - name: Store cases in Android repo
