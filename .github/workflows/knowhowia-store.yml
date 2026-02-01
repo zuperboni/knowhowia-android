@@ -9,10 +9,26 @@ permissions:
   pull-requests: read
 
 jobs:
+  debug:
+    name: debug-conditions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print merge + labels context
+        run: |
+          echo "merged: ${{ github.event.pull_request.merged }}"
+          echo "pr_number: ${{ github.event.pull_request.number }}"
+          echo "pr_title: ${{ github.event.pull_request.title }}"
+          echo "pr_url: ${{ github.event.pull_request.html_url }}"
+          echo "labels: ${{ join(github.event.pull_request.labels.*.name, ',') }}"
+          echo "base_sha: ${{ github.event.pull_request.base.sha }}"
+          echo "merge_sha(github.sha): ${{ github.sha }}"
+
   store:
+    name: generate-and-commit-cases
+    needs: debug
     if: >
       github.event.pull_request.merged == true &&
-      contains(toJson(github.event.pull_request.labels), '"name":"knowhowia"')
+      contains(join(github.event.pull_request.labels.*.name, ','), 'knowhowia')
     runs-on: ubuntu-latest
 
     steps:
@@ -35,12 +51,25 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           python3 - << 'PY'
-          import os, re
+          import os, re, sys
+
           body = os.environ.get("PR_BODY") or ""
           m = re.search(r"```text\s*(.*?)\s*```", body, re.S)
+
           if not m:
-            raise SystemExit("ERRO: não encontrei bloco ```text``` no corpo do PR.")
-          open("crash.txt","w",encoding="utf-8").write(m.group(1).strip() + "\n")
+              print("ERRO: não encontrei bloco ```text``` no corpo do PR.")
+              print("Cole o stacktrace dentro de um bloco exatamente assim:")
+              print("```text")
+              print("<stacktrace>")
+              print("```")
+              sys.exit(1)
+
+          crash = m.group(1).strip()
+          if len(crash) < 80:
+              print("ERRO: bloco ```text``` muito curto para ser stacktrace válido.")
+              sys.exit(1)
+
+          open("crash.txt", "w", encoding="utf-8").write(crash + "\n")
           print("OK: crash.txt gerado.")
           PY
 
@@ -48,6 +77,7 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           MERGE_SHA: ${{ github.sha }}
         run: |
@@ -57,6 +87,9 @@ jobs:
             echo ""
             echo "PR URL:"
             echo "$PR_URL"
+            echo ""
+            echo "PR Number:"
+            echo "$PR_NUMBER"
             echo ""
             echo "Diff (base..merge):"
             echo ""
@@ -74,6 +107,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # só versiona a base
           git add cases/ cases_min/ || true
 
           if git diff --cached --quiet; then
