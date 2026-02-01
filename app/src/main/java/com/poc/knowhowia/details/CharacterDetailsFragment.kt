@@ -34,7 +34,7 @@ class CharacterDetailsFragment :
         name = view.findViewById(R.id.name)
         status = view.findViewById(R.id.status)
         species = view.findViewById(R.id.species)
-        //gender = view.findViewById(R.id.gender)
+        gender = view.findViewById(R.id.gender)
 
         val id = requireArguments().getInt(ARG_ID)
 
