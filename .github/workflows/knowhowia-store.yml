@@ -160,7 +160,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          ./gradlew run --args="analyze"
+          ./gradlew :app:run --args="analyze"
 
       - name: Commit generated cases
         run: |
