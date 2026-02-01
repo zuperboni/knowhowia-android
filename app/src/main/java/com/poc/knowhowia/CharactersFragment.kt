@@ -38,7 +38,7 @@ class CharactersFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        recycler = view.findViewById(R.id.recycler)
+       // recycler = view.findViewById(R.id.recycler)
         progress = view.findViewById(R.id.progress)
 
         recycler.adapter = adapter
