@@ -96,6 +96,26 @@ jobs:
             git diff "$BASE_SHA" "$MERGE_SHA"
           } > pr.txt
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Verify OPENAI_API_KEY is present
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "ERRO: secrets.OPENAI_API_KEY está vazio ou não configurado."
+            echo "Vá em Settings → Secrets and variables → Actions → New repository secret"
+            echo "Crie OPENAI_API_KEY com sua chave."
+            exit 1
+          fi
+
+      - name: Run KnowHowIA analyze (generates cases)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./gradlew run --args="analyze"
+
       - name: Run KnowHowIA analyze (generates cases)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
