@@ -26,7 +26,6 @@ class CharacterDetailsFragment :
         scope.get<CharacterDetailsContract.Presenter>()
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
