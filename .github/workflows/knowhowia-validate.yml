@@ -1,0 +1,60 @@
+name: KnowHowIA - validate crash block
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - labeled
+      - unlabeled
+      - reopened
+  merge_group: {}
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate:
+    name: validate-knowhowia-crash
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate crash block if labeled knowhowia
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
+        run: |
+          python3 - << 'PY'
+          import os, re, json, sys
+
+          labels_json = os.environ.get("PR_LABELS") or "[]"
+          labels = [l.get("name", "") for l in json.loads(labels_json)]
+
+          needs_validation = "knowhowia" in labels
+
+          if not needs_validation:
+              print("OK: PR sem label 'knowhowia'. Nenhuma validação necessária.")
+              sys.exit(0)
+
+          body = os.environ.get("PR_BODY") or ""
+
+          match = re.search(r"```text\s*(.*?)\s*```", body, re.DOTALL)
+
+          if not match:
+              print("ERRO: label 'knowhowia' presente, mas não encontrei bloco ```text``` com stacktrace.")
+              print("Cole o stacktrace do Crashlytics dentro do bloco indicado no template do PR.")
+              sys.exit(1)
+
+          crash = match.group(1).strip()
+
+          if len(crash) < 80:
+              print("ERRO: o conteúdo do bloco ```text``` é muito curto para ser um stacktrace válido.")
+              sys.exit(1)
+
+          if "Exception" not in crash and "Error" not in crash:
+              print("ERRO: o texto não parece conter uma Exception/Error.")
+              sys.exit(1)
+
+          print("OK: stacktrace encontrado e parece válido.")
+          PY
