@@ -26,12 +26,50 @@ jobs:
   store:
     name: generate-and-commit-cases
     needs: debug
-    if: >
-      github.event.pull_request.merged == true &&
-      contains(join(github.event.pull_request.labels.*.name, ','), 'knowhowia')
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
+      - name: Fetch PR body and decide if it has crash block
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 - << 'PY'
+          import os, re, json, urllib.request
+
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["REPO"]
+          pr_number = os.environ["PR_NUMBER"]
+
+          url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+          req = urllib.request.Request(url)
+          req.add_header("Authorization", f"Bearer {token}")
+          req.add_header("Accept", "application/vnd.github+json")
+
+          with urllib.request.urlopen(req) as resp:
+              data = json.loads(resp.read().decode("utf-8"))
+
+          body = data.get("body") or ""
+          has = bool(re.search(r"```text\s*(.*?)\s*```", body, re.S))
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"has_crash_block={str(has).lower()}\n")
+
+          if has:
+              print("OK: PR possui bloco ```text``` (crash). Vou gerar case.")
+          else:
+              print("Sem bloco ```text``` no PR body. Não é PR de crash -> não vou gerar case.")
+          PY
+
+      - name: Stop if no crash block
+        if: steps.gate.outputs.has_crash_block != 'true'
+        run: |
+          echo "Encerrando: PR sem crash block."
+          exit 0
+
       - name: Checkout (merge commit)
         uses: actions/checkout@v4
         with:
@@ -46,22 +84,34 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Extract crash block -> crash.txt
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Extract crash block -> crash.txt (via API)
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           python3 - << 'PY'
-          import os, re, sys
+          import os, re, json, urllib.request, sys
 
-          body = os.environ.get("PR_BODY") or ""
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["REPO"]
+          pr_number = os.environ["PR_NUMBER"]
+
+          url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+          req = urllib.request.Request(url)
+          req.add_header("Authorization", f"Bearer {token}")
+          req.add_header("Accept", "application/vnd.github+json")
+
+          with urllib.request.urlopen(req) as resp:
+              data = json.loads(resp.read().decode("utf-8"))
+
+          body = data.get("body") or ""
           m = re.search(r"```text\s*(.*?)\s*```", body, re.S)
-
           if not m:
               print("ERRO: não encontrei bloco ```text``` no corpo do PR.")
-              print("Cole o stacktrace dentro de um bloco exatamente assim:")
-              print("```text")
-              print("<stacktrace>")
-              print("```")
               sys.exit(1)
 
           crash = m.group(1).strip()
@@ -96,25 +146,15 @@ jobs:
             git diff "$BASE_SHA" "$MERGE_SHA"
           } > pr.txt
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
       - name: Verify OPENAI_API_KEY is present
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
             echo "ERRO: secrets.OPENAI_API_KEY está vazio ou não configurado."
-            echo "Vá em Settings → Secrets and variables → Actions → New repository secret"
-            echo "Crie OPENAI_API_KEY com sua chave."
+            echo "Configure em Settings → Secrets and variables → Actions → OPENAI_API_KEY"
             exit 1
           fi
-
-      - name: Run KnowHowIA analyze (generates cases)
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          ./gradlew run --args="analyze"
 
       - name: Run KnowHowIA analyze (generates cases)
         env:
@@ -127,7 +167,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # só versiona a base
           git add cases/ cases_min/ || true
 
           if git diff --cached --quiet; then
