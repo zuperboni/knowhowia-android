@@ -1,0 +1,85 @@
+name: KnowHowIA - store case on merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  store:
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(toJson(github.event.pull_request.labels), '"name":"knowhowia"')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (merge commit)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Extract crash block -> crash.txt
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 - << 'PY'
+          import os, re
+          body = os.environ.get("PR_BODY") or ""
+          m = re.search(r"```text\s*(.*?)\s*```", body, re.S)
+          if not m:
+            raise SystemExit("ERRO: não encontrei bloco ```text``` no corpo do PR.")
+          open("crash.txt","w",encoding="utf-8").write(m.group(1).strip() + "\n")
+          print("OK: crash.txt gerado.")
+          PY
+
+      - name: Build pr.txt from PR metadata + diff
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          {
+            echo "Title:"
+            echo "$PR_TITLE"
+            echo ""
+            echo "PR URL:"
+            echo "$PR_URL"
+            echo ""
+            echo "Diff (base..merge):"
+            echo ""
+            git diff "$BASE_SHA" "$MERGE_SHA"
+          } > pr.txt
+
+      - name: Run KnowHowIA analyze (generates cases)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./gradlew run --args="analyze"
+
+      - name: Commit generated cases
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add cases/ cases_min/ || true
+
+          if git diff --cached --quiet; then
+            echo "Sem novos cases para commitar."
+            exit 0
+          fi
+
+          git commit -m "chore(knowhowia): store case for PR #${{ github.event.pull_request.number }}"
+          git push
