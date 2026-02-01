@@ -30,7 +30,7 @@ class CharacterDetailsFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        progress = view.findViewById(R.id.progress)
+       // progress = view.findViewById(R.id.progress)
         name = view.findViewById(R.id.name)
         status = view.findViewById(R.id.status)
         species = view.findViewById(R.id.species)
