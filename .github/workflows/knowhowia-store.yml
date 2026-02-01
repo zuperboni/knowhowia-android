@@ -1,4 +1,4 @@
-name: KnowHowIA - store case on merge
+name: KnowHowIA - store case on merge (android repo)
 
 on:
   pull_request:
@@ -13,11 +13,9 @@ jobs:
     name: debug-conditions
     runs-on: ubuntu-latest
     steps:
-      - name: Print merge + labels context
-        run: |
+      - run: |
           echo "merged: ${{ github.event.pull_request.merged }}"
           echo "pr_number: ${{ github.event.pull_request.number }}"
-          echo "pr_title: ${{ github.event.pull_request.title }}"
           echo "pr_url: ${{ github.event.pull_request.html_url }}"
           echo "labels: ${{ join(github.event.pull_request.labels.*.name, ',') }}"
           echo "base_sha: ${{ github.event.pull_request.base.sha }}"
@@ -30,71 +28,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Fetch PR body and decide if it has crash block
-        id: gate
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          python3 - << 'PY'
-          import os, re, json, urllib.request
-
-          token = os.environ["GH_TOKEN"]
-          repo = os.environ["REPO"]
-          pr_number = os.environ["PR_NUMBER"]
-
-          url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-          req = urllib.request.Request(url)
-          req.add_header("Authorization", f"Bearer {token}")
-          req.add_header("Accept", "application/vnd.github+json")
-
-          with urllib.request.urlopen(req) as resp:
-              data = json.loads(resp.read().decode("utf-8"))
-
-          body = data.get("body") or ""
-          has = bool(re.search(r"```text\s*(.*?)\s*```", body, re.S))
-
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-              f.write(f"has_crash_block={str(has).lower()}\n")
-
-          if has:
-              print("OK: PR possui bloco ```text``` (crash). Vou gerar case.")
-          else:
-              print("Sem bloco ```text``` no PR body. Não é PR de crash -> não vou gerar case.")
-          PY
-
-      - name: Stop if no crash block
-        if: steps.gate.outputs.has_crash_block != 'true'
-        run: |
-          echo "Encerrando: PR sem crash block."
-          exit 0
-
-      - name: Checkout (merge commit)
+      # 1) Checkout do repo ANDROID (onde o PR foi mergeado)
+      - name: Checkout Android repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Extract crash block -> crash.txt (via API)
+      # 2) Buscar PR body via API e extrair crash + preparar pr.txt com diff
+      - name: Build crash.txt and pr.txt from PR (via API + git diff)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_SHA: ${{ github.sha }}
         run: |
           python3 - << 'PY'
-          import os, re, json, urllib.request, sys
+          import os, re, json, sys, urllib.request
 
           token = os.environ["GH_TOKEN"]
           repo = os.environ["REPO"]
@@ -111,63 +63,112 @@ jobs:
           body = data.get("body") or ""
           m = re.search(r"```text\s*(.*?)\s*```", body, re.S)
           if not m:
-              print("ERRO: não encontrei bloco ```text``` no corpo do PR.")
-              sys.exit(1)
+              print("Sem bloco ```text``` no PR. Não é PR de crash -> não vou gerar case.")
+              open(".__knowhowia_skip__", "w", encoding="utf-8").write("skip\n")
+              sys.exit(0)
 
           crash = m.group(1).strip()
           if len(crash) < 80:
-              print("ERRO: bloco ```text``` muito curto para ser stacktrace válido.")
-              sys.exit(1)
+              print("Bloco de crash muito curto. Não vou gerar case.")
+              open(".__knowhowia_skip__", "w", encoding="utf-8").write("skip\n")
+              sys.exit(0)
 
-          open("crash.txt", "w", encoding="utf-8").write(crash + "\n")
-          print("OK: crash.txt gerado.")
+          open("crash.txt","w",encoding="utf-8").write(crash + "\n")
+          print("OK: crash.txt criado.")
           PY
 
-      - name: Build pr.txt from PR metadata + diff
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          MERGE_SHA: ${{ github.sha }}
-        run: |
+          if [ -f .__knowhowia_skip__ ]; then
+            echo "SKIP: PR sem crash block válido."
+            exit 0
+          fi
+
           {
             echo "Title:"
-            echo "$PR_TITLE"
+            echo "${PR_TITLE}"
             echo ""
             echo "PR URL:"
-            echo "$PR_URL"
-            echo ""
-            echo "PR Number:"
-            echo "$PR_NUMBER"
+            echo "${PR_URL}"
             echo ""
             echo "Diff (base..merge):"
             echo ""
-            git diff "$BASE_SHA" "$MERGE_SHA"
+            git diff "${BASE_SHA}" "${MERGE_SHA}"
           } > pr.txt
 
-      - name: Verify OPENAI_API_KEY is present
+      - name: Stop if no crash block
+        if: ${{ hashFiles('.__knowhowia_skip__') != '' }}
+        run: |
+          echo "Encerrando: PR não tinha crash block válido."
+          exit 0
+
+      # 3) Checkout do repo KnowHowIA (tool Kotlin/JVM) dentro de uma subpasta
+      - name: Checkout KnowHowIA tool repo
+        uses: actions/checkout@v4
+        with:
+          repository: zuperboni/knowhowia
+          path: knowhowia-tool
+          fetch-depth: 1
+
+      # 4) Copiar inputs dentro do tool repo
+      - name: Copy inputs to tool repo
+        run: |
+          cp crash.txt knowhowia-tool/crash.txt
+          cp pr.txt knowhowia-tool/pr.txt
+
+      # 5) Rodar analyze no repo KnowHowIA
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable (tool repo)
+        run: chmod +x knowhowia-tool/gradlew
+
+      - name: Verify OPENAI_API_KEY is present (android repo secrets)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
-            echo "ERRO: secrets.OPENAI_API_KEY está vazio ou não configurado."
-            echo "Configure em Settings → Secrets and variables → Actions → OPENAI_API_KEY"
+            echo "ERRO: secrets.OPENAI_API_KEY vazio/não configurado no repo Android."
             exit 1
           fi
 
-      - name: Run KnowHowIA analyze (generates cases)
+      - name: Run KnowHowIA analyze (tool repo)
+        working-directory: knowhowia-tool
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./gradlew :app:run --args="analyze"
 
-      - name: Commit generated cases
+      # 6) Copiar o resultado pro repo Android e commitar
+      - name: Store cases in Android repo
+        run: |
+          mkdir -p knowhowia/cases knowhowia/cases_min
+
+          # tool repo gera diretamente nesses diretórios
+          if [ -d knowhowia-tool/cases ]; then
+            cp -r knowhowia-tool/cases/* knowhowia/cases/
+          else
+            echo "ERRO: knowhowia-tool/cases não existe. Verifique o tool repo."
+            exit 1
+          fi
+
+          if [ -d knowhowia-tool/cases_min ]; then
+            cp -r knowhowia-tool/cases_min/* knowhowia/cases_min/
+          else
+            echo "ERRO: knowhowia-tool/cases_min não existe. Verifique o tool repo."
+            exit 1
+          fi
+
+      - name: Commit stored cases (Android repo)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add cases/ cases_min/ || true
+          git add knowhowia/cases/ knowhowia/cases_min/ || true
 
           if git diff --cached --quiet; then
             echo "Sem novos cases para commitar."
