@@ -2,11 +2,13 @@ package com.poc.knowhowia.details
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.poc.knowhowia.R
+import com.poc.knowhowia.episodes.EpisodesFragment
 import org.koin.android.scope.AndroidScopeComponent
 import org.koin.androidx.scope.fragmentScope
 import org.koin.core.scope.Scope
@@ -22,6 +24,8 @@ class CharacterDetailsFragment :
     private lateinit var status: TextView
     private lateinit var species: TextView
     private lateinit var gender: TextView
+
+    private lateinit var button: Button
     private val presenter: CharacterDetailsContract.Presenter by lazy {
         scope.get<CharacterDetailsContract.Presenter>()
     }
@@ -34,7 +38,14 @@ class CharacterDetailsFragment :
         status = view.findViewById(R.id.status)
         species = view.findViewById(R.id.species)
         gender = view.findViewById(R.id.gender)
+        button = view.findViewById(R.id.button)
 
+        button.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.container, EpisodesFragment.newInstance())
+                .addToBackStack("episodes")
+                .commit()
+        }
         val id = requireArguments().getInt(ARG_ID)
         presenter.attach(this)
         presenter.loadCharacter(id)
