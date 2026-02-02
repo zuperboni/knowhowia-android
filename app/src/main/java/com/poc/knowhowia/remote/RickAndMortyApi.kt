@@ -13,4 +13,9 @@ interface RickAndMortyApi {
 
     @GET("character/{id}")
     fun getCharacter(@Path("id") id: Int): Single<CharacterDto>
+
+    @GET("episode")
+    fun getEpisodes(
+        @Query("page") page: Int = 1
+    ): Single<CharactersResponseDto>
 }

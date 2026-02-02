@@ -1,11 +1,11 @@
 package com.poc.knowhowia.di
 
 import com.poc.knowhowia.CharactersFragment
-import com.poc.knowhowia.details.CharacterDetailsFragment
 import com.poc.knowhowia.HomeContract
 import com.poc.knowhowia.HomePresenter
 import com.poc.knowhowia.data.CharactersRepository
 import com.poc.knowhowia.details.CharacterDetailsContract
+import com.poc.knowhowia.details.CharacterDetailsFragment
 import com.poc.knowhowia.details.CharacterDetailsPresenter
 import com.poc.knowhowia.details.CharacterDetailsRepository
 import com.poc.knowhowia.episodes.EpisodesContract

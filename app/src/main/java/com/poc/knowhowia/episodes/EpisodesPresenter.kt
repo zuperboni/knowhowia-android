@@ -1,13 +1,12 @@
 package com.poc.knowhowia.episodes
 
-import com.poc.knowhowia.data.CharactersRepository
 import com.poc.knowhowia.model.CharacterUi
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 
 class EpisodesPresenter(
-    private val repository: CharactersRepository
+    private val repository: EpisodesRepository
 ) : EpisodesContract.Presenter {
 
     private var view: EpisodesContract.View? = null
