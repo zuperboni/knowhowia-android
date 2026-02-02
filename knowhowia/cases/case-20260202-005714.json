@@ -1,0 +1,19 @@
+{
+    "crash_signature": {
+        "exception": "org.koin.core.error.NoBeanDefFoundException: No definition found for type 'com.poc.knowhowia.episodes.EpisodesContract$Presenter'. Check your Modules configuration and add missing type and/or qualifier!",
+        "top_frames": [
+            "org.koin.core.scope.Scope.throwDefinitionNotFound(Scope.kt:302)",
+            "org.koin.core.scope.Scope.resolveValue(Scope.kt:272)",
+            "com.poc.knowhowia.episodes.EpisodesFragment.presenter_delegate$lambda$2(EpisodesFragment.kt:82)",
+            "com.poc.knowhowia.episodes.EpisodesFragment.onViewCreated(EpisodesFragment.kt:47)"
+        ]
+    },
+    "hypothesis": "O crash sugere que a instância de 'EpisodesContract.Presenter' não foi devidamente registrada no contêiner de dependência do Koin antes de sua resolução na classe 'EpisodesFragment'. Isso pode ocorrer se a configuração da injeção de dependências não considerar o escopo do fragmento em tempo de execução, especialmente se o Presenter estiver sendo acessado durante a fase de 'onViewCreated', onde espera-se que a injeção já esteja configurada.",
+    "solution_pattern": "O padrão adotado envolve a criação de um módulo específico para o 'EpisodesFragment', onde a definição de 'EpisodesContract.Presenter' é explicitamente declarada. Isso garante que, ao acessar o Presenter dentro do ciclo de vida do fragmento, uma instância válida já esteja disponível, prevenindo o erro de definição não encontrada.",
+    "pr_evidence": {
+        "files_touched": [
+            "app/src/main/java/com/poc/knowhowia/di/AppModules.kt"
+        ],
+        "why_related": "O arquivo 'AppModules.kt' foi alterado para incluir o 'episodesFragmentModule', onde a definição do 'EpisodesPresenter' foi adicionada no contexto correto do escopo do fragmento. Isso é diretamente relevante para o crash, pois aborda a falta de configuração do Presenter que causou a exceção de NoBeanDefFound."
+    }
+}

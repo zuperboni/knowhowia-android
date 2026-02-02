@@ -1,0 +1,18 @@
+{
+    "case_id": "case-20260202-005714",
+    "crash_signature": {
+        "exception": "org.koin.core.error.NoBeanDefFoundException: No definition found for type 'com.poc.knowhowia.episodes.EpisodesContract$Presenter'. Check your Modules configuration and add missing type and/or qualifier!",
+        "top_frames": [
+            "org.koin.core.scope.Scope.throwDefinitionNotFound(Scope.kt:302)",
+            "org.koin.core.scope.Scope.resolveValue(Scope.kt:272)",
+            "com.poc.knowhowia.episodes.EpisodesFragment.presenter_delegate$lambda$2(EpisodesFragment.kt:82)",
+            "com.poc.knowhowia.episodes.EpisodesFragment.onViewCreated(EpisodesFragment.kt:47)"
+        ]
+    },
+    "problem_summary": "O crash sugere que a instância de 'EpisodesContract.Presenter' não foi devidamente registrada no contêiner de dependência do Koin antes de sua resolução na classe 'EpisodesFragment'. Isso pode ocorrer se a configuração da injeção de dependências não considerar o escopo do fragmen",
+    "solution_pattern": "O padrão adotado envolve a criação de um módulo específico para o 'EpisodesFragment', onde a definição de 'EpisodesContract.Presenter' é explicitamente declarada. Isso garante que, ao acessar o Presenter dentro do ciclo de vida do fragmento, uma instância válida já esteja disponível, prevenindo o erro de definição não encontrada.",
+    "related_pr": {
+        "url": "https://github.com/zuperboni/knowhowia-android/pull/16",
+        "title": "Title:"
+    }
+}
