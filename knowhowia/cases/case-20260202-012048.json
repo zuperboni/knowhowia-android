@@ -1,0 +1,22 @@
+{
+    "crash_signature": {
+        "exception": "org.koin.core.error.NoBeanDefFoundException",
+        "top_frames": [
+            "at org.koin.core.scope.Scope.throwDefinitionNotFound(Scope.kt:302)",
+            "at org.koin.core.scope.Scope.resolveValue(Scope.kt:272)",
+            "at org.koin.core.scope.Scope.resolveInstance(Scope.kt:234)",
+            "at org.koin.core.scope.Scope.get(Scope.kt:213)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.presenter_delegate$lambda$2(EpisodesFragment.kt:82)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.getPresenter(EpisodesFragment.kt:35)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.onViewCreated(EpisodesFragment.kt:47)"
+        ]
+    },
+    "hypothesis": "O crash provavelmente ocorreu devido à ausência de uma definição para o tipo 'CharactersRepository' no escopo do 'EpisodesFragment'. Isso sugere que o acesso ao 'presenter' na função 'onViewCreated' do fragmento estava sendo realizado antes que o escopo adequado tivesse sido criado, resultando em um erro de instância não resolvida.",
+    "solution_pattern": "A solução adotada foi adicionar a definição do 'CharactersRepository' utilizando 'scoped { CharactersRepository(get()) }' dentro do módulo do 'EpisodesFragment'. Isso garante que a instância do 'CharactersRepository' é criada dentro do escopo do fragmento, prevenindo assim o erro de definição não encontrada ao acessar o presenter.",
+    "pr_evidence": {
+        "files_touched": [
+            "app/src/main/java/com/poc/knowhowia/di/AppModules.kt"
+        ],
+        "why_related": "O arquivo 'AppModules.kt' foi modificado para incluir a definição do 'CharactersRepository' no escopo do 'EpisodesFragment', que é a origem do crash, pois sua ausência resultou na tentativa de acessar uma instância não criada."
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "case_id": "case-20260202-012048",
+    "crash_signature": {
+        "exception": "org.koin.core.error.NoBeanDefFoundException",
+        "top_frames": [
+            "at org.koin.core.scope.Scope.throwDefinitionNotFound(Scope.kt:302)",
+            "at org.koin.core.scope.Scope.resolveValue(Scope.kt:272)",
+            "at org.koin.core.scope.Scope.resolveInstance(Scope.kt:234)",
+            "at org.koin.core.scope.Scope.get(Scope.kt:213)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.presenter_delegate$lambda$2(EpisodesFragment.kt:82)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.getPresenter(EpisodesFragment.kt:35)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.onViewCreated(EpisodesFragment.kt:47)"
+        ]
+    },
+    "problem_summary": "O crash provavelmente ocorreu devido à ausência de uma definição para o tipo 'CharactersRepository' no escopo do 'EpisodesFragment'. Isso sugere que o acesso ao 'presenter' na função 'onViewCreated' do fragmento estava sendo realizado antes que o escopo adequado tivesse sido cria",
+    "solution_pattern": "A solução adotada foi adicionar a definição do 'CharactersRepository' utilizando 'scoped { CharactersRepository(get()) }' dentro do módulo do 'EpisodesFragment'. Isso garante que a instância do 'CharactersRepository' é criada dentro do escopo do fragmento, prevenindo assim o erro de definição não encontrada ao acessar o presenter.",
+    "related_pr": {
+        "url": "https://github.com/zuperboni/knowhowia-android/pull/17",
+        "title": "Title:"
+    }
+}
