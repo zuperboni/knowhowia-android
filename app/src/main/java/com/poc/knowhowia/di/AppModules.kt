@@ -35,6 +35,7 @@ private val detailsFragmentModule = module {
 
 private val episodesFragmentModule = module {
     scope<EpisodesFragment> {
+        scoped { CharactersRepository(get()) }
         scoped<EpisodesContract.Presenter> { EpisodesPresenter(get()) }
     }
 }
