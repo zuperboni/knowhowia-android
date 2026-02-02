@@ -1,0 +1,19 @@
+{
+    "case_id": "case-20260202-014551",
+    "crash_signature": {
+        "exception": "org.koin.core.error.NoBeanDefFoundException: No definition found for type 'com.poc.knowhowia.data.CharactersRepository'. Check your Modules configuration and add missing type and/or qualifier!",
+        "top_frames": [
+            "at org.koin.core.scope.Scope.throwDefinitionNotFound(Scope.kt:302)",
+            "at org.koin.core.scope.Scope.resolveValue(Scope.kt:272)",
+            "at org.koin.core.scope.Scope.get(Scope.kt:213)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.presenter_delegate$lambda$2(EpisodesFragment.kt:82)",
+            "at com.poc.knowhowia.episodes.EpisodesFragment.onViewCreated(EpisodesFragment.kt:47)"
+        ]
+    },
+    "problem_summary": "O crash ocorreu devido à tentativa de acessar uma instância de 'CharactersRepository' que não estava definida no escopo do módulo do Koin para 'EpisodesFragment'. Isso sugere que, durante a fase de criação da view (no método 'onViewCreated'), o fragmento esperava encontrar uma de",
+    "solution_pattern": "O padrão de solução adotado foi a adição de uma definição de escopo para 'CharactersRepository' dentro do módulo 'episodesFragmentModule', utilizando 'scoped { CharactersRepository(get()) }'. Isso garante que uma instância do 'CharactersRepository' esteja disponível sempre que 'EpisodesFragment' for criado, prevenindo assim o crash causado pela inexistência da definição.",
+    "related_pr": {
+        "url": "https://github.com/zuperboni/knowhowia-android/pull/19",
+        "title": "Title:"
+    }
+}
