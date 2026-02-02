@@ -1,0 +1,17 @@
+{
+    "case_id": "case-20260202-002154",
+    "crash_signature": {
+        "exception": "kotlin.UninitializedPropertyAccessException: lateinit property gender has not been initialized",
+        "top_frames": [
+            "io.reactivex.rxjava3.plugins.RxJavaPlugins.onError(RxJavaPlugins.java:372)",
+            "io.reactivex.rxjava3.internal.observers.ConsumerSingleObserver.onSuccess(ConsumerSingleObserver.java:65)",
+            "io.reactivex.rxjava3.internal.operators.single.SingleDoFinally$DoFinallyObserver.onSuccess(SingleDoFinallyObserver.java:73)"
+        ]
+    },
+    "problem_summary": "O crash provavelmente ocorreu devido ao uso da propriedade 'gender' que é marcada como 'lateinit', mas não foi inicializada antes de seu acesso em um fluxo assíncrono. Isso sugere que a inicialização pode não ter ocorrido antes do término de um evento observável de RxJava, result",
+    "solution_pattern": "A solução envolveu garantir que a propriedade 'gender' seja corretamente inicializada antes de seu acesso. Isso reduz a probabilidade de lançar uma UninitializedPropertyAccessException, especialmente em contextos assíncronos onde o fluxo de dados pode ser interrompido ou cancelado.",
+    "related_pr": {
+        "url": "https://github.com/zuperboni/knowhowia-android/pull/15",
+        "title": "Title:"
+    }
+}

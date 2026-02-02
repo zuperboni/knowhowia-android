@@ -1,0 +1,18 @@
+{
+    "crash_signature": {
+        "exception": "kotlin.UninitializedPropertyAccessException: lateinit property gender has not been initialized",
+        "top_frames": [
+            "io.reactivex.rxjava3.plugins.RxJavaPlugins.onError(RxJavaPlugins.java:372)",
+            "io.reactivex.rxjava3.internal.observers.ConsumerSingleObserver.onSuccess(ConsumerSingleObserver.java:65)",
+            "io.reactivex.rxjava3.internal.operators.single.SingleDoFinally$DoFinallyObserver.onSuccess(SingleDoFinallyObserver.java:73)"
+        ]
+    },
+    "hypothesis": "O crash provavelmente ocorreu devido ao uso da propriedade 'gender' que é marcada como 'lateinit', mas não foi inicializada antes de seu acesso em um fluxo assíncrono. Isso sugere que a inicialização pode não ter ocorrido antes do término de um evento observável de RxJava, resultando em um acesso à propriedade não inicializada durante o ciclo de vida do Fragment, possivelmente após o estado de onViewCreated.",
+    "solution_pattern": "A solução envolveu garantir que a propriedade 'gender' seja corretamente inicializada antes de seu acesso. Isso reduz a probabilidade de lançar uma UninitializedPropertyAccessException, especialmente em contextos assíncronos onde o fluxo de dados pode ser interrompido ou cancelado.",
+    "pr_evidence": {
+        "files_touched": [
+            "app/src/main/java/com/poc/knowhowia/details/CharacterDetailsFragment.kt"
+        ],
+        "why_related": "O único arquivo modificado implementa a lógica da interface 'CharacterDetailsFragment', onde a propriedade 'gender' é utilizada. A alteração proposta no PR indica que houve uma revisão na ordem de inicialização ou na lógica anterior para evitar o acesso a propriedades não inicializadas, que é uma causa direta do crash mencionado."
+    }
+}
